@@ -7,6 +7,15 @@ Modular import plugin for babel, compatible with [antd](https://github.com/ant-d
 
 ----
 
+## webpack 插件
+
+```html
+<script>
+  window._theme_zz_ui_zlj_ = window.navigator.userAgent.includes('zhaoliangji');
+  window._theme_zz_ui_zz_ = window.navigator.userAgent.includes('58ZhuanZhuan');
+</script>
+```
+
 ## Why babel-plugin-import
 
 - [English Instruction](https://ant.design/docs/react/getting-started#Import-on-Demand)

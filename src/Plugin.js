@@ -1,6 +1,6 @@
 import { join } from 'path';
-import { addSideEffect, addDefault, addNamed } from '@babel/helper-module-imports';
-
+import { addSideEffect, addDefault, addNamed, addNamespace } from '@babel/helper-module-imports';
+let isFirst = true
 function transCamel(_str, symbol) {
   const str = _str[0].toLowerCase() + _str.substr(1);
   return str.replace(/([A-Z])/g, $1 => `${symbol}${$1.toLowerCase()}`);
@@ -34,6 +34,7 @@ export default class Plugin {
     customName,
     transformToDefaultImport,
     types,
+    template,
     index = 0,
   ) {
     this.libraryName = libraryName;
@@ -49,6 +50,7 @@ export default class Plugin {
     this.transformToDefaultImport =
       typeof transformToDefaultImport === 'undefined' ? true : transformToDefaultImport;
     this.types = types;
+    this.template = template;
     this.pluginStateKey = `importPluginState${index}`;
   }
 
@@ -60,6 +62,7 @@ export default class Plugin {
   }
 
   importMethod(methodName, file, pluginState) {
+    console.log('methodName', methodName)
     if (!pluginState.selectedMethods[methodName]) {
       const { style, libraryDirectory } = this;
       const transformedMethodName = this.camel2UnderlineComponentName // eslint-disable-line
@@ -72,9 +75,11 @@ export default class Plugin {
           ? this.customName(transformedMethodName, file)
           : join(this.libraryName, libraryDirectory, transformedMethodName, this.fileName), // eslint-disable-line
       );
+      console.log(this.libraryName, libraryDirectory, transformedMethodName)
       pluginState.selectedMethods[methodName] = this.transformToDefaultImport // eslint-disable-line
         ? addDefault(file.path, path, { nameHint: methodName })
         : addNamed(file.path, methodName, path);
+
       if (this.customStyleName) {
         const stylePath = winPath(this.customStyleName(transformedMethodName, file));
         addSideEffect(file.path, `${stylePath}`);
@@ -89,11 +94,30 @@ export default class Plugin {
         addSideEffect(file.path, `${path}/style/css`);
       } else if (typeof style === 'function') {
         const stylePath = style(path, file);
-        if (stylePath) {
+
+        // console.log(`style === 'function'`, path);
+        console.dir(file.path.node)
+        console.log(`file.path` ,`stylePath`, stylePath);
+
+        if (stylePath && 1) {
+          // 走逻辑 运行时判断import 逻辑
+          const str = `if(_theme_zz){import("${stylePath + 'index'}");} else {import("${stylePath + 'zlj'}");}`;
+          const importAst = this.template.ast(str);
+          // console.log('importAst', importAst, Array.isArray(file.path.node.body));
+          console.dir(importAst)
+          if(isFirst) {
+            const varStr = `var _theme_zz = !window.navigator.userAgent.includes("zhaoliangji");`;
+            const importVarAst = this.template.ast(varStr);
+            file.path.node.body.unshift(importVarAst);
+          }
+          file.path.node.body.splice(1, 0, importAst);
+          isFirst = false;
+        } else if(stylePath) {
           addSideEffect(file.path, stylePath);
         }
       }
     }
+    // console.log('pluginState.selectedMethods', pluginState.selectedMethods)
     return { ...pluginState.selectedMethods[methodName] };
   }
 
@@ -107,6 +131,7 @@ export default class Plugin {
         pluginState.specified[node[prop].name] &&
         types.isImportSpecifier(path.scope.getBinding(node[prop].name).path)
       ) {
+        console.log('node[prop]', node[prop])
         node[prop] = this.importMethod(pluginState.specified[node[prop].name], file, pluginState); // eslint-disable-line
       }
     });
@@ -143,6 +168,7 @@ export default class Plugin {
     pluginState.libraryObjs = Object.create(null);
     pluginState.selectedMethods = Object.create(null);
     pluginState.pathsToRemove = [];
+    pluginState.styleImports = [];
   }
 
   ProgramExit(path, state) {
@@ -159,14 +185,19 @@ export default class Plugin {
     const { libraryName } = this;
     const { types } = this;
     const pluginState = this.getPluginState(state);
+
     if (value === libraryName) {
       node.specifiers.forEach(spec => {
         if (types.isImportSpecifier(spec)) {
           pluginState.specified[spec.local.name] = spec.imported.name;
+          console.log('pluginState.specified', spec.imported.name, pluginState.specified)
+
         } else {
+          console.log('pluginState.libraryObjs', pluginState.libraryObjs, [spec.local.name]);
           pluginState.libraryObjs[spec.local.name] = true;
         }
       });
+
       pluginState.pathsToRemove.push(path);
     }
   }

@@ -24,6 +24,22 @@ describe('index', () => {
     it(`should work with ${caseName.split('-').join(' ')}`, () => {
       let pluginWithOpts;
       caseName = caseName.replace(/-only$/, '');
+
+      if (caseName === 'custom-style-name') {
+        pluginWithOpts = [
+          plugin,
+          {
+            libraryName: 'element-ui',
+            customStyleName: name => `element-ui/lib/theme-light/${name}`,
+          },
+          'zz'
+        ];
+      const actual = transformFileSync(actualFile, {
+        presets: ['@babel/preset-react'],
+        plugins: [pluginWithOpts || plugin],
+      });
+      console.log(actual)
+      return
       if (caseName === 'import-css') {
         pluginWithOpts = [plugin, { libraryName: 'antd', style: true }];
       } else if (caseName === 'material-ui') {
@@ -167,6 +183,8 @@ describe('index', () => {
           }).code;
         }
       })();
+
+      console.log(actual)
 
       if (onlyFixtures.length) {
         console.warn();

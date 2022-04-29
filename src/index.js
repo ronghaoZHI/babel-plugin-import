@@ -1,7 +1,10 @@
 import assert from 'assert';
 import Plugin from './Plugin';
 
-export default function ({ types }) {
+export default function (opt) {
+  const { types, template } = opt;
+  opt.assertVersion(7)
+  console.log(['template'], template)
   let plugins = null;
 
   // Only for test
@@ -54,6 +57,7 @@ export default function ({ types }) {
                 transformToDefaultImport,
                 types,
                 index,
+                template
               );
             },
           );
@@ -72,6 +76,7 @@ export default function ({ types }) {
               opts.customName,
               opts.transformToDefaultImport,
               types,
+              template
             ),
           ];
         }
