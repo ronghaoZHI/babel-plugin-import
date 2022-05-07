@@ -1,6 +1,6 @@
 import { join } from 'path';
 import { addSideEffect, addDefault, addNamed, addNamespace } from '@babel/helper-module-imports';
-let isFirst = true
+
 function transCamel(_str, symbol) {
   const str = _str[0].toLowerCase() + _str.substr(1);
   return str.replace(/([A-Z])/g, $1 => `${symbol}${$1.toLowerCase()}`);
@@ -25,6 +25,7 @@ export default class Plugin {
   constructor(
     libraryName,
     libraryDirectory,
+    runtimeThemeStyle,
     style,
     styleLibraryDirectory,
     customStyleName,
@@ -52,6 +53,7 @@ export default class Plugin {
     this.types = types;
     this.template = template;
     this.pluginStateKey = `importPluginState${index}`;
+    this.runtimeThemeStyle = runtimeThemeStyle;
   }
 
   getPluginState(state) {
@@ -80,7 +82,56 @@ export default class Plugin {
         ? addDefault(file.path, path, { nameHint: methodName })
         : addNamed(file.path, methodName, path);
 
-      if (this.customStyleName) {
+      if(this.runtimeThemeStyle) {
+        // 目前采用 硬编码方式 定义运行时主题变量， 配合 webpack 插件一起使用
+        const styleDict = {
+          'zzStyle': {
+            var: '_theme_zz_ui_zlj_',
+            path: ''
+          },
+          'zljStyle': {
+            var: '_theme_zz_ui_zlj_',
+            path: ''
+          },
+          'hunterStyle': {
+            var: '_theme_zz_ui_hunter_',
+            path: ''
+          },
+        };
+
+        const {
+          defaultStyle = 'zzStyle',
+          zzStyle = () => '',
+          zljStyle = () => '',
+          hunterStyle = () => ''
+        } = this.runtimeThemeStyle;
+
+        zzStyle(path, file) ? (styleDict['zzStyle'].path = zzStyle(path, file)) : (delete styleDict['zzStyle']);
+        zljStyle(path, file) ? (styleDict['zljStyle'].path = zljStyle(path, file)) : (delete styleDict['zljStyle']);
+        hunterStyle(path, file) ? (styleDict['hunterStyle'].path = hunterStyle(path, file)) : (delete styleDict['hunterStyle']);
+
+        if (Object.keys(styleDict).length) {
+          const tempStyleDict = { ...styleDict };
+          // 运行时判断逻辑
+          let _defaultStyle = { ...tempStyleDict[defaultStyle] };
+          delete tempStyleDict[defaultStyle];
+          // console.log('tempStyleDict', tempStyleDict)
+          let str = '', index = 0;
+
+          for(const s in tempStyleDict) {
+            str += `${index > 0 ? 'else' : ''} if(${tempStyleDict[s].var}) {
+              import(/* webpackChunkName: "zz-ui-${s}" */ '${tempStyleDict[s].path}');
+            }`;
+            index++;
+          }
+          str += `else {
+            import(/* webpackChunkName: "zz-ui-${defaultStyle}" */ '${_defaultStyle.path}');
+          }`;
+
+          const importAst = this.template.ast(str, { preserveComments: true });
+          file.path.node.body.unshift(importAst);
+        }
+      } else if (this.customStyleName) {
         const stylePath = winPath(this.customStyleName(transformedMethodName, file));
         addSideEffect(file.path, `${stylePath}`);
       } else if (this.styleLibraryDirectory) {
@@ -94,25 +145,7 @@ export default class Plugin {
         addSideEffect(file.path, `${path}/style/css`);
       } else if (typeof style === 'function') {
         const stylePath = style(path, file);
-
-        // console.log(`style === 'function'`, path);
-        console.dir(file.path.node)
-        console.log(`file.path` ,`stylePath`, stylePath);
-
-        if (stylePath && 1) {
-          // 走逻辑 运行时判断import 逻辑
-          const str = `if(_theme_zz){import("${stylePath + 'index'}");} else {import("${stylePath + 'zlj'}");}`;
-          const importAst = this.template.ast(str);
-          // console.log('importAst', importAst, Array.isArray(file.path.node.body));
-          console.dir(importAst)
-          if(isFirst) {
-            const varStr = `var _theme_zz = !window.navigator.userAgent.includes("zhaoliangji");`;
-            const importVarAst = this.template.ast(varStr);
-            file.path.node.body.unshift(importVarAst);
-          }
-          file.path.node.body.splice(1, 0, importAst);
-          isFirst = false;
-        } else if(stylePath) {
+        if(stylePath) {
           addSideEffect(file.path, stylePath);
         }
       }

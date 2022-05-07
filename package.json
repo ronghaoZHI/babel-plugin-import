@@ -8,6 +8,7 @@
   },
   "main": "lib/index.js",
   "scripts": {
+    "t": "father-build && node ./test/test.js",
     "build": "father-build",
     "test": "umi-test --coverage",
     "debug": "umi-test",

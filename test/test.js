@@ -15,9 +15,14 @@ const pluginWithOpts = [
   {
     libraryName: 'element-ui',
     libraryDirectory: 'lib',
-    style: name => `element-ui/lib/${name}/style/`,
+    runtimeThemeStyle: {
+      defaultStyle: 'zzStyle',
+      zzStyle: (name) => `${name}/style/index}`,
+      zljStyle: (name) => `${name}/style/zlj}`,
+      // hunterStyle: (name) => `${name}/style/zzHunter}`
+    }
   },
-  'zz'
+  'zz-ui'
 ];
 
 const actual = transformFileSync(actualFile, {
@@ -29,21 +34,6 @@ const actual = transformFileSync(actualFile, {
     //   {
     //     libraryName: 'element-ui',
     //     libraryDirectory: 'lib',
-    //     runtimeStyleMap: {
-    //       '_var_theme_zz': {
-    //         reg: () => !window.navigator.userAgent.includes('zhaoliangji'),
-    //         style: name => `element-ui/lib/theme-light/${name}/style/index`,
-    //       },
-    //       '_var_theme_zlj': {
-    //         reg: () => window.navigator.userAgent.includes('zhaoliangji'),
-    //         style: name => `element-ui/lib/theme-light/${name}/style/zlj`,
-    //       },
-    //       default: {
-    //         reg: () => !window.navigator.userAgent.includes('zhaoliangji'),
-    //         style: name => `element-ui/lib/theme-light/${name}/style/index`
-    //       }
-    //     }
-    //   }
     // ],
   ],
 }).code;

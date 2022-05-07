@@ -32,6 +32,7 @@ export default function (opt) {
               {
                 libraryName,
                 libraryDirectory,
+                runtimeThemeStyle,
                 style,
                 styleLibraryDirectory,
                 customStyleName,
@@ -47,6 +48,7 @@ export default function (opt) {
               return new Plugin(
                 libraryName,
                 libraryDirectory,
+                runtimeThemeStyle,
                 style,
                 styleLibraryDirectory,
                 customStyleName,
@@ -67,6 +69,7 @@ export default function (opt) {
             new Plugin(
               opts.libraryName,
               opts.libraryDirectory,
+              opts.runtimeThemeStyle,
               opts.style,
               opts.styleLibraryDirectory,
               opts.customStyleName,

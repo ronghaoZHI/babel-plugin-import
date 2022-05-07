@@ -1,19 +1,25 @@
-# babel-plugin-import
+# @zz-common/babel-plugin-import
+该插件基于 [babel-plugin-import](https://github.com/umijs/babel-plugin-import/blob/master/README.md) 二次开发，用法与参数保持一致
 
-Modular import plugin for babel, compatible with [antd](https://github.com/ant-design/ant-design), [antd-mobile](https://github.com/ant-design/ant-design-mobile), lodash, [material-ui](http://material-ui.com/), and so on.
+### 运行时换肤功能配置 （需要和 webpack 插件一起使用）
 
-[![NPM version](https://img.shields.io/npm/v/babel-plugin-import.svg?style=flat)](https://npmjs.org/package/babel-plugin-import)
-[![Build Status](https://img.shields.io/travis/ant-design/babel-plugin-import.svg?style=flat)](https://travis-ci.org/ant-design/babel-plugin-import)
+```js
+// babel.config.js
 
-----
-
-## webpack 插件
-
-```html
-<script>
-  window._theme_zz_ui_zlj_ = window.navigator.userAgent.includes('zhaoliangji');
-  window._theme_zz_ui_zz_ = window.navigator.userAgent.includes('58ZhuanZhuan');
-</script>
+ [
+  '@zz-common/babel-import-plugin',
+  {
+    libraryName: 'zz-ui',
+    libraryDirectory: 'lib',
+    runtimeThemeStyle: { // 需要支持运行时动态加载时配置该参数
+      defaultStyle: 'zzStyle',
+      zzStyle: (name) => `${name}/style/index}`,
+      zljStyle: (name) => `${name}/style/zlj}`,
+      // hunterStyle: (name) => `${name}/style/zzHunter}`
+    }
+  },
+  'zz-ui'
+ ]
 ```
 
 ## Why babel-plugin-import
